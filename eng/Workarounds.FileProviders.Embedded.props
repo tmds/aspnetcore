@@ -1,0 +1,16 @@
+<!-- Use this file to workaround issues with referencing M.E.FileProviders.Embedded. List the issue tracking the item to fix so we can remove the workaround when the issue is resolved. -->
+<Project TreatAsLocalProperty="_FileProviderTaskAssembly">
+  <!-- Mimics the content of src\FileProviders\Embedded\src\build\netstandard2.0\Microsoft.Extensions.FileProviders.Embedded.props -->
+  <PropertyGroup>
+    <GenerateEmbeddedFilesManifest Condition="'$(GenerateEmbeddedFilesManifest)' == ''">false</GenerateEmbeddedFilesManifest>
+    <EmbeddedFilesManifestFileName Condition="'$(EmbeddedFilesManifestFileName)' == ''">Microsoft.Extensions.FileProviders.Embedded.Manifest.xml</EmbeddedFilesManifestFileName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_FileProviderTaskAssembly>$(ArtifactsDir)bin\Microsoft.Extensions.FileProviders.Embedded.Manifest.Task\$(Configuration)\netstandard2.0\Microsoft.Extensions.FileProviders.Embedded.Manifest.Task.dll</_FileProviderTaskAssembly>
+  </PropertyGroup>
+
+  <UsingTask
+    AssemblyFile="$(_FileProviderTaskAssembly)"
+    TaskName="Microsoft.Extensions.FileProviders.Embedded.Manifest.Task.GenerateEmbeddedResourcesManifest" />
+</Project>
