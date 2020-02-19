@@ -2,6 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Mime;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -9,6 +12,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
 namespace Microsoft.AspNetCore.Builder
@@ -50,6 +54,8 @@ namespace Microsoft.AspNetCore.Builder
                         // At this point we mapped something from the _/framework
                         ctx.Response.Headers.Append(HeaderNames.CacheControl, "no-cache");
                     }
+
+                    NegotiateEncoding(ctx, webHostEnvironment);
 
                     // This will invoke the static files middleware plugged-in below.
                     await next();
@@ -97,6 +103,22 @@ namespace Microsoft.AspNetCore.Builder
 
             options.ContentTypeProvider = contentTypeProvider;
 
+            // Static files middleware will try to use application/x-gzip as the content
+            // type when serving a file with a gz extension. We need to correct that before
+            // sending the file.
+            options.OnPrepareResponse = fileContext =>
+            {
+                var requestPath = fileContext.Context.Request.Path;
+                if (string.Equals(Path.GetExtension(requestPath.Value), ".gz"))
+                {
+                    var originalPath = Path.GetFileNameWithoutExtension(requestPath.Value);
+                    if (contentTypeProvider.TryGetContentType(originalPath, out var originalContentType))
+                    {
+                        fileContext.Context.Response.ContentType = originalContentType;
+                    }
+                }
+            };
+
             return options;
         }
 
@@ -106,6 +128,71 @@ namespace Microsoft.AspNetCore.Builder
             {
                 provider.Mappings.Add(name, mimeType);
             }
+        }
+
+        private static void NegotiateEncoding(HttpContext context, IWebHostEnvironment webHost)
+        {
+            var accept = context.Request.Headers[HeaderNames.AcceptEncoding];
+            if (StringValues.IsNullOrEmpty(accept))
+            {
+                return;
+            }
+
+            if (!StringWithQualityHeaderValue.TryParseList(accept, out var encodings) || encodings.Count == 0)
+            {
+                return;
+            }
+
+            var supportedEncodings = new HashSet<StringSegment>(StringSegmentComparer.OrdinalIgnoreCase) { "gzip" };
+
+            var selectedEncoding = StringSegment.Empty;
+            var selectedEncodingQuality = .0;
+
+            foreach (var encoding in encodings)
+            {
+                var encodingName = encoding.Value;
+                var quality = encoding.Quality.GetValueOrDefault(1);
+
+                if (quality < double.Epsilon)
+                {
+                    continue;
+                }
+
+                if (quality <= selectedEncodingQuality)
+                {
+                    continue;
+                }
+
+                if (supportedEncodings.Contains(encodingName))
+                {
+                    selectedEncoding = encodingName;
+                    selectedEncodingQuality = quality;
+                }
+
+                if (StringSegment.Equals("*", encodingName, StringComparison.Ordinal))
+                {
+                    selectedEncoding = supportedEncodings.First();
+                    selectedEncodingQuality = quality;
+                }
+
+                if (StringSegment.Equals("identity", encodingName, StringComparison.OrdinalIgnoreCase))
+                {
+                    selectedEncoding = StringSegment.Empty;
+                    selectedEncodingQuality = quality;
+                }
+            }
+
+            if (StringSegment.Equals("gzip", selectedEncoding, StringComparison.OrdinalIgnoreCase))
+            {
+                var targetPath = context.Request.Path + ".gz";
+                if (webHost.WebRootFileProvider.GetFileInfo(targetPath) != null)
+                {
+                    context.Request.Path = targetPath;
+                    context.Response.Headers[HeaderNames.ContentEncoding] = "gzip";
+                }
+            }
+
+            return;
         }
     }
 }
