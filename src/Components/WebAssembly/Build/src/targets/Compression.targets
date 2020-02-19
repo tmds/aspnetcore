@@ -1,0 +1,45 @@
+<Project>
+  <PropertyGroup>
+
+    <ResolveCurrentProjectStaticWebAssetsDependsOn>
+      $(ResolveCurrentProjectStaticWebAssetsDependsOn);
+      _CompressBlazorApplicationFiles;
+    </ResolveCurrentProjectStaticWebAssetsDependsOn>
+
+  </PropertyGroup>
+
+  <Target Name="_ResolveAssetsToCompress" AfterTargets="_ResolveBlazorGeneratedAssets">
+
+    <PropertyGroup>
+      <StaticResourcesIntermediateOutputPath>$(IntermediateOutputPath)compressed\</StaticResourcesIntermediateOutputPath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(StaticResourcesIntermediateOutputPath)" />
+    <ItemGroup>
+      <_StaticResourceToCompress Include="@(StaticWebAsset)" Condition="'%(SourceType)' == '' and $([System.String]::Copy('%(RelativePath)').Replace('\','/').StartsWith('_framework/'))">
+        <TargetCompressionPath>$(StaticResourcesIntermediateOutputPath)%(RelativePath).gz</TargetCompressionPath>
+        <TargetOutputPath>%(RelativePath).gz</TargetOutputPath>
+        <RelativePath>%(RelativePath).gz</RelativePath>
+      </_StaticResourceToCompress>
+
+      <_CompressedStaticWebAsset Include="@(_StaticResourceToCompress->'%(TargetCompressionPath)')" RemoveMetadata="TargetOutputPath;TargetCompressionPath" />
+
+      <StaticWebAsset Include="@(_CompressedStaticWebAsset)" />
+      <FileWrites Include="@(_CompressedStaticWebAsset)" />
+
+    </ItemGroup>
+  </Target>
+
+  <UsingTask TaskName="CompressBlazorApplicationFiles" AssemblyFile="$(BlazorTasksPath)" />
+
+  <Target
+    Name="_CompressBlazorApplicationFiles"
+    AfterTargets="_ResolveAssetsToCompress"
+    Inputs="@(_StaticResourceToCompress)"
+    Outputs="%(_StaticResourceToCompress.TargetCompressionPath)">
+
+    <CompressBlazorApplicationFiles StaticWebAsset="@(_StaticResourceToCompress)" />
+
+  </Target>
+
+</Project>
