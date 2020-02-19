@@ -53,9 +53,8 @@ namespace Microsoft.AspNetCore.Builder
                     {
                         // At this point we mapped something from the _/framework
                         ctx.Response.Headers.Append(HeaderNames.CacheControl, "no-cache");
+                        NegotiateEncoding(ctx, webHostEnvironment);
                     }
-
-                    NegotiateEncoding(ctx, webHostEnvironment);
 
                     // This will invoke the static files middleware plugged-in below.
                     await next();
@@ -189,6 +188,7 @@ namespace Microsoft.AspNetCore.Builder
                 {
                     context.Request.Path = targetPath;
                     context.Response.Headers[HeaderNames.ContentEncoding] = "gzip";
+                    context.Response.Headers.Append(HeaderNames.Vary, HeaderNames.ContentEncoding);
                 }
             }
 
