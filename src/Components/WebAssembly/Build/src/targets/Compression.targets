@@ -16,7 +16,7 @@
 
     <MakeDir Directories="$(StaticResourcesIntermediateOutputPath)" />
     <ItemGroup>
-      <_StaticResourceToCompress Include="@(StaticWebAsset)" Condition="'%(SourceType)' == '' and $([System.String]::Copy('%(RelativePath)').Replace('\','/').StartsWith('_framework/'))">
+      <_StaticResourceToCompress Include="@(StaticWebAsset)" Condition="'%(SourceType)' == '' and $([System.String]::Copy('%(RelativePath)').Replace('\','/').StartsWith('_framework/'))" KeepDuplicates="false">
         <TargetCompressionPath>$(StaticResourcesIntermediateOutputPath)%(RelativePath).gz</TargetCompressionPath>
         <TargetOutputPath>%(RelativePath).gz</TargetOutputPath>
         <RelativePath>%(RelativePath).gz</RelativePath>
@@ -24,7 +24,7 @@
 
       <_CompressedStaticWebAsset Include="@(_StaticResourceToCompress->'%(TargetCompressionPath)')" RemoveMetadata="TargetOutputPath;TargetCompressionPath" />
 
-      <StaticWebAsset Include="@(_CompressedStaticWebAsset)" />
+      <StaticWebAsset Include="@(_CompressedStaticWebAsset->'%(FullPath)')" />
       <FileWrites Include="@(_CompressedStaticWebAsset)" />
 
     </ItemGroup>
