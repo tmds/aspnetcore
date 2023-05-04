@@ -158,21 +158,7 @@
     <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
 
     <!-- This defines the list of RIDs supported by the ASP.NET Core shared framework. -->
-    <SupportedRuntimeIdentifiers>
-      win-x64;
-      win-x86;
-      win-arm;
-      win-arm64;
-      osx-x64;
-      osx-arm64;
-      linux-musl-x64;
-      linux-musl-arm;
-      linux-musl-arm64;
-      linux-x64;
-      linux-arm;
-      linux-arm64;
-      freebsd-x64
-    </SupportedRuntimeIdentifiers>
+    <SupportedRuntimeIdentifiers>win-x64;win-x86;win-arm;win-arm64;osx-x64;osx-arm64;linux-musl-x64;linux-musl-arm;linux-musl-arm64;linux-x64;linux-arm;linux-arm64;freebsd-x64</SupportedRuntimeIdentifiers>
 
     <SupportedRuntimeIdentifiers Condition=" '$(PortableBuild)' == 'false' ">$(SupportedRuntimeIdentifiers);$(TargetRuntimeIdentifier)</SupportedRuntimeIdentifiers>
 
