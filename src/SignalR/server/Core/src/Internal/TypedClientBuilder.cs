@@ -116,7 +116,7 @@ internal static class TypedClientBuilder<T>
         var returnType = interfaceMethodInfo.ReturnType;
         bool isInvoke = returnType != typeof(Task);
 
-        var methodBuilder = type.DefineMethod(interfaceMethodInfo.Name, methodAttributes);
+        var methodBuilder = type.DefineMethod(interfaceMethodInfo.Name, methodAttributes, returnType, paramTypes);
 
         MethodInfo invokeMethod;
         if (isInvoke)
@@ -132,9 +132,6 @@ internal static class TypedClientBuilder<T>
                 nameof(IClientProxy.SendCoreAsync), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null,
                 new[] { typeof(string), typeof(object[]), typeof(CancellationToken) }, null)!;
         }
-
-        methodBuilder.SetReturnType(interfaceMethodInfo.ReturnType);
-        methodBuilder.SetParameters(paramTypes);
 
         // Sets the number of generic type parameters
         var genericTypeNames =
